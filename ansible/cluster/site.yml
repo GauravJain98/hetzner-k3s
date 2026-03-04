@@ -18,3 +18,8 @@
   hosts: k3s_servers
   roles:
     - k3s-verify
+
+- name: Setup cluster admin
+  hosts: k3s_servers
+  roles:
+    - k3s-admin

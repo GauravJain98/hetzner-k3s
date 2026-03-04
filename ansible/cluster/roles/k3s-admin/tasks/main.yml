@@ -1,0 +1,57 @@
+---
+- name: Template admin ServiceAccount manifest
+  ansible.builtin.template:
+    src: admin-sa.yml.j2
+    dest: /tmp/admin-sa.yml
+    mode: "0600"
+
+- name: Apply admin ServiceAccount resources
+  ansible.builtin.command:
+    cmd: k3s kubectl apply -f /tmp/admin-sa.yml
+  register: sa_apply
+  changed_when: "'created' in sa_apply.stdout or 'configured' in sa_apply.stdout"
+
+- name: Wait for token to be populated in secret
+  ansible.builtin.shell: |
+    k3s kubectl get secret cluster-admin-sa-token -n kube-system -o jsonpath='{.data.token}'
+  register: token_check
+  retries: 10
+  delay: 2
+  until: token_check.stdout | length > 0
+  changed_when: false
+
+- name: Extract SA token from secret
+  ansible.builtin.shell: |
+    k3s kubectl get secret cluster-admin-sa-token -n kube-system -o jsonpath='{.data.token}' | base64 -d
+  register: sa_token_raw
+  changed_when: false
+
+- name: Read cluster CA certificate
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/tls/server-ca.crt
+  register: ca_cert_raw
+
+- name: Set kubeconfig facts
+  ansible.builtin.set_fact:
+    sa_token: "{{ sa_token_raw.stdout }}"
+    ca_cert_b64: "{{ ca_cert_raw.content }}"
+
+- name: Generate admin kubeconfig
+  ansible.builtin.template:
+    src: kubeconfig.yml.j2
+    dest: /tmp/kubeconfig-admin.yml
+    mode: "0600"
+
+- name: Fetch kubeconfig to local machine
+  ansible.builtin.fetch:
+    src: /tmp/kubeconfig-admin.yml
+    dest: ./kubeconfig-admin.yml
+    flat: true
+
+- name: Clean up remote temp files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/admin-sa.yml
+    - /tmp/kubeconfig-admin.yml
