@@ -1,0 +1,29 @@
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# Authentication
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+UsePAM yes
+
+# Security
+X11Forwarding no
+PrintMotd no
+MaxAuthTries 3
+MaxSessions 5
+LoginGraceTime 30
+
+# Keep alive
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# Subsystems
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# Restrict to admin group
+AllowUsers {{ admin_user }}

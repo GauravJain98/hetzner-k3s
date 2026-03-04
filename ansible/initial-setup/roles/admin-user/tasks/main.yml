@@ -1,0 +1,43 @@
+---
+- name: Create admin user
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Add admin user to sudo group
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    append: true
+
+- name: Allow passwordless sudo for admin user
+  ansible.builtin.copy:
+    content: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/{{ admin_user }}"
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Create .ssh directory for admin user
+  ansible.builtin.file:
+    path: "/home/{{ admin_user }}/.ssh"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0700"
+
+- name: Add SSH public key for admin user
+  ansible.builtin.copy:
+    content: "{{ admin_ssh_pub_key }}\n"
+    dest: "/home/{{ admin_user }}/.ssh/authorized_keys"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0600"
+
+- name: Verify SSH access for admin user
+  ansible.builtin.command:
+    cmd: "ssh -o StrictHostKeyChecking=no -o BatchMode=yes {{ admin_user }}@{{ ansible_host }} echo ok"
+  delegate_to: localhost
+  become: false
+  changed_when: false

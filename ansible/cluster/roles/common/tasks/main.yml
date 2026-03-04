@@ -1,0 +1,37 @@
+---
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - apt-transport-https
+    state: present
+    update_cache: true
+
+- name: Load br_netfilter kernel module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Load overlay kernel module
+  community.general.modprobe:
+    name: overlay
+    state: present
+
+- name: Ensure kernel modules load on boot
+  ansible.builtin.copy:
+    content: |
+      br_netfilter
+      overlay
+    dest: /etc/modules-load.d/k3s.conf
+    mode: "0644"
+
+- name: Set required sysctl params for K3S
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    reload: true
+  loop:
+    - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    - { key: "net.ipv4.ip_forward", value: "1" }

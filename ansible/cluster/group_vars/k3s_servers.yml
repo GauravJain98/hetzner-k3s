@@ -1,0 +1,1 @@
+k3s_server_extra_args: "--write-kubeconfig-mode 644"

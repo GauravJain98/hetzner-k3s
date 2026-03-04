@@ -1,0 +1,94 @@
+---
+# --- SSH Hardening ---
+- name: Deploy hardened sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "sshd -t -f %s"
+  notify: Restart sshd
+
+# --- Firewall (UFW) ---
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+
+- name: Allow SSH
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow HTTP
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Allow K3S API server
+  community.general.ufw:
+    rule: allow
+    port: "6443"
+    proto: tcp
+
+- name: Allow kubelet metrics
+  community.general.ufw:
+    rule: allow
+    port: "10250"
+    proto: tcp
+
+- name: Allow etcd
+  community.general.ufw:
+    rule: allow
+    port: 2379:2380
+    proto: tcp
+
+- name: Allow Flannel VXLAN
+  community.general.ufw:
+    rule: allow
+    port: "8472"
+    proto: udp
+
+- name: Allow WireGuard (IPv4)
+  community.general.ufw:
+    rule: allow
+    port: "51820"
+    proto: udp
+
+- name: Allow WireGuard (IPv6)
+  community.general.ufw:
+    rule: allow
+    port: "51821"
+    proto: udp
+
+- name: Set UFW default deny incoming
+  community.general.ufw:
+    state: enabled
+    default: deny
+    direction: incoming
+
+- name: Set UFW default allow outgoing
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+# --- Unattended Upgrades ---
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Enable unattended-upgrades
+  ansible.builtin.command:
+    cmd: dpkg-reconfigure -plow unattended-upgrades -fnoninteractive
+  changed_when: false

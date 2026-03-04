@@ -1,0 +1,10 @@
+---
+- name: Create admin user on all servers
+  hosts: k3s
+  roles:
+    - admin-user
+
+- name: Harden all servers
+  hosts: k3s
+  roles:
+    - security-hardening

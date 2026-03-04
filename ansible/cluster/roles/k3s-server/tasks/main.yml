@@ -1,0 +1,37 @@
+---
+- name: Check if K3S is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Install K3S server
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server {{ k3s_server_extra_args }}
+  args:
+    creates: /usr/local/bin/k3s
+  when: not k3s_binary.stat.exists
+  notify: Restart k3s
+
+- name: Enable and start K3S service
+  ansible.builtin.systemd:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for K3S to be ready
+  ansible.builtin.command:
+    cmd: k3s kubectl get nodes
+  register: k3s_ready
+  retries: 30
+  delay: 5
+  until: k3s_ready.rc == 0
+  changed_when: false
+
+- name: Read K3S node token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+
+- name: Set K3S token fact
+  ansible.builtin.set_fact:
+    k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"

@@ -1,0 +1,19 @@
+---
+- name: Wait for all nodes to be ready
+  ansible.builtin.shell: |
+    k3s kubectl get nodes --no-headers | grep -c " Ready "
+  register: ready_nodes
+  retries: 30
+  delay: 10
+  until: ready_nodes.stdout | int == 3
+  changed_when: false
+
+- name: Display cluster status
+  ansible.builtin.command:
+    cmd: k3s kubectl get nodes -o wide
+  register: cluster_status
+  changed_when: false
+
+- name: Show cluster status
+  ansible.builtin.debug:
+    msg: "{{ cluster_status.stdout_lines }}"

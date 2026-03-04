@@ -1,0 +1,2 @@
+admin_user: sysadmin
+admin_ssh_pub_key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"

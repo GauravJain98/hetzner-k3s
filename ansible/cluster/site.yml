@@ -1,0 +1,20 @@
+---
+- name: Install prerequisites on all K3S nodes
+  hosts: k3s
+  roles:
+    - common
+
+- name: Install K3S server on control plane
+  hosts: k3s_servers
+  roles:
+    - k3s-server
+
+- name: Join K3S agents to the cluster
+  hosts: k3s_agents
+  roles:
+    - k3s-agent
+
+- name: Verify cluster health
+  hosts: k3s_servers
+  roles:
+    - k3s-verify
