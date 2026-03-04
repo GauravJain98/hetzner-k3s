@@ -16,59 +16,21 @@
     state: present
     update_cache: true
 
-- name: Allow SSH
+- name: Allow required ports through UFW
   community.general.ufw:
     rule: allow
-    port: "22"
-    proto: tcp
-
-- name: Allow HTTP
-  community.general.ufw:
-    rule: allow
-    port: "80"
-    proto: tcp
-
-- name: Allow HTTPS
-  community.general.ufw:
-    rule: allow
-    port: "443"
-    proto: tcp
-
-- name: Allow K3S API server
-  community.general.ufw:
-    rule: allow
-    port: "6443"
-    proto: tcp
-
-- name: Allow kubelet metrics
-  community.general.ufw:
-    rule: allow
-    port: "10250"
-    proto: tcp
-
-- name: Allow etcd
-  community.general.ufw:
-    rule: allow
-    port: 2379:2380
-    proto: tcp
-
-- name: Allow Flannel VXLAN
-  community.general.ufw:
-    rule: allow
-    port: "8472"
-    proto: udp
-
-- name: Allow WireGuard (IPv4)
-  community.general.ufw:
-    rule: allow
-    port: "51820"
-    proto: udp
-
-- name: Allow WireGuard (IPv6)
-  community.general.ufw:
-    rule: allow
-    port: "51821"
-    proto: udp
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    - { port: "22", proto: tcp }      # SSH
+    - { port: "80", proto: tcp }      # HTTP
+    - { port: "443", proto: tcp }     # HTTPS
+    - { port: "6443", proto: tcp }    # K3S API server
+    - { port: "10250", proto: tcp }   # kubelet metrics
+    - { port: "2379:2380", proto: tcp }  # etcd
+    - { port: "8472", proto: udp }    # Flannel VXLAN
+    - { port: "51820", proto: udp }   # WireGuard (IPv4)
+    - { port: "51821", proto: udp }   # WireGuard (IPv6)
 
 - name: Set UFW default deny incoming
   community.general.ufw:
@@ -94,12 +56,13 @@
 
 # --- Restart SSH (last step) ---
 # This kills the current root SSH session, so it must run last.
-# The connection drop is expected — all tasks above have already completed.
+# async/poll avoids play failure when the SSH connection drops.
 - name: Restart sshd to apply hardened config
   ansible.builtin.systemd:
     name: sshd
     state: restarted
-  ignore_errors: true
+  async: 1
+  poll: 0
 
 - name: Confirm SSH hardening applied
   ansible.builtin.debug:
