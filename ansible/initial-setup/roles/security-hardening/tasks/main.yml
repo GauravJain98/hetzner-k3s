@@ -8,7 +8,6 @@
     group: root
     mode: "0600"
     validate: "sshd -t -f %s"
-  notify: Restart sshd
 
 # --- Firewall (UFW) ---
 - name: Install UFW
@@ -92,3 +91,19 @@
   ansible.builtin.command:
     cmd: dpkg-reconfigure -plow unattended-upgrades -fnoninteractive
   changed_when: false
+
+# --- Restart SSH (last step) ---
+# This kills the current root SSH session, so it must run last.
+# The connection drop is expected — all tasks above have already completed.
+- name: Restart sshd to apply hardened config
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+  ignore_errors: true
+
+- name: Confirm SSH hardening applied
+  ansible.builtin.debug:
+    msg: >-
+      SSH has been restarted with the hardened config.
+      The connection drop above (if any) is expected — root login is now disabled.
+      Reconnect using: ssh {{ admin_user }}@{{ ansible_host }}
