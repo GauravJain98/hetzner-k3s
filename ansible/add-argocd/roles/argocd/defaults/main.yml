@@ -1,0 +1,13 @@
+---
+argocd_namespace: argocd
+argocd_release_name: argocd
+argocd_chart_repo: https://argoproj.github.io/argo-helm
+argocd_chart_name: argo-cd
+argocd_chart_version: "7.7.16"
+
+argocd_helm_values:
+  crds:
+    install: true
+    keep: true
+  server:
+    insecure: true
