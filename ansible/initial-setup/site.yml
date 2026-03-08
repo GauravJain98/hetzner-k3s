@@ -1,10 +1,12 @@
 ---
 - name: Create admin user on all servers
   hosts: k3s
+  strategy: free
   roles:
     - admin-user
 
 - name: Harden all servers
   hosts: k3s
+  strategy: free
   roles:
     - security-hardening

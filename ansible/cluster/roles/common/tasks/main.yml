@@ -6,6 +6,7 @@
       - apt-transport-https
     state: present
     update_cache: true
+    cache_valid_time: 3600
 
 - name: Load br_netfilter kernel module
   community.general.modprobe:
