@@ -5,6 +5,9 @@
 *.tfplan
 .terraform.lock.hcl
 
+# Kubernetes
+kubeconfig-admin.yml
+
 # Environment variables
 .env
 *.tfvars
